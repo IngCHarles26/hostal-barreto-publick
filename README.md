@@ -1,5 +1,179 @@
 # Hostal Barreto
 
+Web-based operational management system for a hostel. The application centralizes reception and administration work in an authenticated dashboard: it allows users to control room availability, register clients and stays, manage reservations, record payments, and review business reports.
+
+The project is designed for a real hotel operations environment, with PostgreSQL persistence, database integrity rules, and an interface prepared for frequent reception workflows.
+
+## Main features
+
+- **Protected dashboard:** access through email and password, persistent sessions, and sign-out.
+- **Room management:** visual floor map, room types, prices, operational status, and availability.
+- **Reservations:** creation, consultation, and deactivation of reservations, with one or more associated rooms.
+- **Stay registration:** guest check-in and check-out, paid dates, room, travel purpose, origin, license plate, notes, and images.
+- **Clients:** creation and editing of personal information, identity document, nationality, contact details, date of birth, and comments.
+- **History and active clients:** consultation of previous stays and tracking of currently hosted guests.
+- **Payments:** recording of cash or electronic payments, amount, description, transaction number, and associated period.
+- **Reports:** daily summary, operational comments, and reports focused on statistical lodging information (MINCETUR).
+- **Users and administrative roles:** user management and administrator configuration through Better Auth.
+- **Optional integrations:** Google Form for stay details and Google folders for organizing images/documents.
+- **Country loading:** integration with an external API to obtain countries and their flags when registering clients.
+
+## Operational workflow
+
+1. An authorized user signs in.
+2. From the dashboard, the user consults the room map and its statuses: available, occupied, reserved, or disabled.
+3. The user registers a reservation or directly creates a new stay by associating a room and clients.
+4. During the stay, the user records payments, notes, and additional guest information.
+5. At the end, the user records the check-out and retains the information in the history.
+6. Administration consults summaries and reports for the hostel's daily follow-up.
+
+## Technology stack
+
+### Application
+
+- **Next.js 16** with App Router and React Server Components.
+- **React 19** and **TypeScript** for a typed and maintainable interface.
+- **Tailwind CSS 4** through PostCSS for application styling.
+- **Zustand** for shared client state.
+- **Zod** for data validation.
+- **React Icons** for interface icons.
+
+### Backend and data
+
+- **Next.js Route Handlers** and Server Actions for endpoints and server operations.
+- **Prisma ORM 7** with a PostgreSQL adapter.
+- **PostgreSQL 17.3** as the relational database.
+- **Better Auth** for authentication, sessions, accounts, and user administration.
+
+### Quality and tooling
+
+- **ESLint 9** with the Next.js configuration.
+- **Prisma Migrate** for versioning schema changes.
+- **pnpm** as the package manager.
+- **Turbopack** during Next.js development.
+
+## Project architecture
+
+```text
+src/
+├── app/                 # Next.js routes, layouts, pages, and Route Handlers
+│   ├── api/             # Authentication and auxiliary endpoints
+│   ├── dashboard/       # Private operations area
+│   │   ├── clients/     # Clients
+│   │   ├── rooms/       # Rooms and room map
+│   │   ├── stays/       # Stays, reservations, and check-in/check-out records
+│   │   ├── reports/     # Daily and MINCETUR reports
+│   │   └── extras/      # Users and administrative functions
+│   └── login/           # System access
+├── components/          # Reusable components and domain-specific forms
+├── lib/
+│   ├── server/          # Server queries and actions
+│   ├── client/          # Client utilities
+│   └── shared/          # Shared logic
+├── store/               # Zustand stores
+└── generated/prisma/    # Generated Prisma client
+
+prisma/
+├── schema.prisma        # Models, relations, enums, and indexes
+└── migrations/          # Versioned database history
+```
+
+## Data model
+
+The relational schema represents the business's main entities:
+
+- `User`, `Session`, `Account`, and `Verification`: authentication and sessions managed by Better Auth.
+- `Room` and `RoomActive`: rooms, type, floor, price, map position, and operational status.
+- `Client` and `Country`: guests, documents, nationality, contact information, and stay metrics.
+- `Stay` and `ClientInStay`: stays, hosted clients, room, dates, purpose, and operational data.
+- `Reservation` and `RoomInReservation`: reservations and associated rooms.
+- `Pay`: payments linked to a stay or an operating period.
+- `DayComment`: comments and notes for the daily report.
+
+The model includes relations, unique keys to prevent duplicate documents, indexes for client searches, and cascading deletions where appropriate.
+
+## Requirements
+
+- Node.js compatible with Next.js 16.
+- pnpm.
+- A local PostgreSQL 17.3 instance.
+- Environment variables configured in a `.env` file.
+
+## Local setup
+
+### 1. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 2. Configure environment variables
+
+Create a `.env` file in the project root:
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/barreto"
+DB_USER="postgres"
+DB_NAME="barreto"
+DB_PASSWORD="postgres"
+ADMIN_IDS="administrator-user-id"
+ADMIN_TOKEN="token-for-administrative-operations"
+NEXT_PUBLIC_GOOGLE_FORM_URL=""
+API_COUNTRIES=""
+API_GOOGLE_FOLDERS=""
+GOOGLE_FOLDER_BASE=""
+```
+
+`DATABASE_URL` is required by Prisma. `DB_USER`, `DB_NAME`, and `DB_PASSWORD` are used by the local PostgreSQL setup. `ADMIN_IDS` and `ADMIN_TOKEN` are used by administrative functions. The variables related to Google and countries are optional depending on the integrations enabled in the environment.
+
+### 3. Start PostgreSQL
+
+Make sure a PostgreSQL instance is running on port `5432` and that its data is persisted according to your local setup.
+
+### 4. Prepare Prisma
+
+```bash
+pnpm exec prisma generate
+pnpm exec prisma migrate dev
+```
+
+### 5. Start the application
+
+```bash
+pnpm dev
+```
+
+The application will be available at `http://localhost:3000`.
+
+## Available scripts
+
+| Command | Description |
+| --- | --- |
+| `pnpm dev` | Starts Next.js in development mode with Turbopack. |
+| `pnpm build` | Generates the Prisma client and builds the application for production. |
+| `pnpm start` | Starts the previously built application. |
+| `pnpm lint` | Runs ESLint on the project. |
+| `pnpm exec prisma generate` | Generates the Prisma client from the schema. |
+| `pnpm exec prisma migrate dev` | Creates and applies migrations in development. |
+
+## Technical decisions and qualities
+
+- **Domain separation:** components, pages, and actions are organized around clients, rooms, stays, reservations, and reports.
+- **Security by design:** the dashboard validates the session before rendering content, and public registration is disabled.
+- **Data consistency:** Prisma and PostgreSQL maintain explicit relations, unique constraints, indexes, and versioned migrations.
+- **Operational experience:** the application prioritizes consultation views, registration forms, and visual states useful for reception work.
+- **Hybrid rendering:** server components are used to load data and protect routes, together with client state for interface interactions.
+- **Maintainability:** TypeScript, Zod validation, ESLint, and a modular structure facilitate system evolution.
+- **Reproducible deployment:** database availability in development and controlled schema evolution are supported by the project's local setup and migrations.
+
+## Project status
+
+The project is under active development. The main hostel operations functionality is organized in the dashboard, and the data schema has versioned migrations. Some external integrations depend on their respective credentials and environment variables.
+
+---
+
+# Hostal Barreto
+
 Sistema web de gestión operativa para un hostal. La aplicación centraliza el trabajo de recepción y administración en un dashboard autenticado: permite controlar la disponibilidad de habitaciones, registrar clientes y estadías, gestionar reservas, registrar pagos y consultar reportes del negocio.
 
 El proyecto está pensado para un entorno real de operación hotelera, con persistencia en PostgreSQL, reglas de integridad en la base de datos y una interfaz preparada para flujos frecuentes de recepción.
@@ -44,7 +218,6 @@ El proyecto está pensado para un entorno real de operación hotelera, con persi
 - **Prisma ORM 7** con adaptador para PostgreSQL.
 - **PostgreSQL 17.3** como base de datos relacional.
 - **Better Auth** para autenticación, sesiones, cuentas y administración de usuarios.
-- **Docker Compose** para levantar PostgreSQL de forma local.
 
 ### Calidad y herramientas
 
@@ -97,7 +270,7 @@ El modelo incorpora relaciones, claves únicas para evitar documentos duplicados
 
 - Node.js compatible con Next.js 16.
 - pnpm.
-- Docker Desktop, o una instancia local de PostgreSQL 17.3.
+- Una instancia local de PostgreSQL 17.3.
 - Variables de entorno configuradas en un archivo `.env`.
 
 ## Puesta en marcha local
@@ -125,17 +298,11 @@ API_GOOGLE_FOLDERS=""
 GOOGLE_FOLDER_BASE=""
 ```
 
-`DATABASE_URL` es necesaria para Prisma. `DB_USER`, `DB_NAME` y `DB_PASSWORD` son utilizadas por Docker Compose. `ADMIN_IDS` y `ADMIN_TOKEN` se utilizan en las funciones administrativas. Las variables relacionadas con Google y países son opcionales según las integraciones habilitadas en el entorno.
+`DATABASE_URL` es necesaria para Prisma. `DB_USER`, `DB_NAME` y `DB_PASSWORD` son utilizadas por la configuración local de PostgreSQL. `ADMIN_IDS` y `ADMIN_TOKEN` se utilizan en las funciones administrativas. Las variables relacionadas con Google y países son opcionales según las integraciones habilitadas en el entorno.
 
 ### 3. Levantar PostgreSQL
 
-El repositorio incluye un servicio Docker para PostgreSQL:
-
-```bash
-docker compose up -d postgre-db
-```
-
-El servicio expone el puerto `5432` y persiste sus datos en la carpeta local `postgres/`.
+Asegúrate de tener una instancia de PostgreSQL ejecutándose en el puerto `5432` y de que sus datos se persistan según tu configuración local.
 
 ### 4. Preparar Prisma
 
@@ -171,7 +338,7 @@ La aplicación estará disponible en `http://localhost:3000`.
 - **Experiencia operativa:** la aplicación prioriza vistas de consulta, formularios de registro y estados visuales útiles para el trabajo de recepción.
 - **Renderizado híbrido:** se aprovechan componentes de servidor para cargar datos y proteger rutas, junto con estado de cliente para interacciones de la interfaz.
 - **Mantenibilidad:** TypeScript, validación con Zod, ESLint y una estructura modular facilitan la evolución del sistema.
-- **Despliegue reproducible:** Docker simplifica la disponibilidad de la base de datos en desarrollo y las migraciones permiten evolucionar el esquema de forma controlada.
+- **Despliegue reproducible:** la configuración local de la base de datos y las migraciones permiten evolucionar el esquema de forma controlada.
 
 ## Estado del proyecto
 
